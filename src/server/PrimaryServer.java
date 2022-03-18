@@ -2,7 +2,12 @@ package server;
 
 import java.net.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
 public class PrimaryServer {
 
@@ -42,9 +47,6 @@ public class PrimaryServer {
     */
 
 
-
-
-
 }
 
 class Connection extends Thread {
@@ -54,38 +56,41 @@ class Connection extends Thread {
     Socket clientSocket;
     int thread_number;
 
-    public Connection (Socket aClientSocket, int numero, ArrayList<Connection> connections) {
+    public Connection(Socket aClientSocket, int numero, ArrayList<Connection> connections) {
         thread_number = numero;
-        try{
+        try {
             clientSocket = aClientSocket;
-            this.connections=connections;
-            synchronized (this){
+            this.connections = connections;
+            synchronized (this) {
                 this.connections.add(this);
             }
             in = new DataInputStream(clientSocket.getInputStream());
             out = new DataOutputStream(clientSocket.getOutputStream());
             this.start();
-        }catch(IOException e){System.out.println("Connection:" + e.getMessage());}
+        } catch (IOException e) {
+            System.out.println("Connection:" + e.getMessage());
+        }
     }
     //=============================
     @Override
     public void run(){
         String resposta;
-        try{
-            while(true){
+        try {
+            while (true) {
                 //an echo server
                 String data = in.readUTF();
-                System.out.println("T["+thread_number + "] Recebeu: "+data);
-                resposta=data.toUpperCase();
-                for( Connection c : connections){
+                System.out.println("T[" + thread_number + "] Recebeu: " + data);
+                resposta = data.toUpperCase();
+                for (Connection c : connections) {
                     c.out.writeUTF(resposta);
                     c.out.flush();
                 }
             }
-        }catch(EOFException e){
+        } catch (EOFException e) {
             System.out.println("EOF:" + e);
             this.connections.remove(this);
-        }catch(IOException e){System.out.println("IO:" + e);
+        } catch (IOException e) {
+            System.out.println("IO:" + e);
             this.connections.remove(this);
         }
     }

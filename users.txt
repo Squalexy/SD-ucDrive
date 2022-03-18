@@ -1,7 +1,7 @@
-squalexy,aaa
-squalexy2,bbb
-squalexy3,ccc
-squalexy4,dawdwa
-alexyalmeida,adwdw
-alexyalmeida2,apfwafafw
-alexyalmeida3,waiondwaoida
+squalexy,aaa,/home/alexy/imagens
+squalexy2,bbb,/home
+squalexy3,ccc,/home
+squalexy4,dawdwa,/home
+alexyalmeida,adwdw,/home
+alexyalmeida2,apfwafafw,/home
+alexyalmeida3,waiondwaoida,/home
