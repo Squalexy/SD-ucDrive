@@ -7,6 +7,9 @@ import java.util.ArrayList;
 import javax.sound.midi.SysexMessage;
 
 public class Client {
+
+	private static final int serversocket = 7000;
+
 	public static void main(String args[]) {
 		// args[0] <- hostname of destination
 		if (args.length == 0) {
@@ -14,22 +17,10 @@ public class Client {
 			System.exit(0);
 		}
 
-		/*
-		 * LEITURA DE FICHEIRO
-		 * FileInputStream fis = new FileInputStream(new File(filename));
-		 * int nread;
-		 * byte [] buf = new byte[buffsize];
-		 * do {
-		 * nread = fis.read(buf);
-		 * if (nread > 0) dos.write(buf, 0, nread);
-		 * }
-		 * while (nread-> -1);
-		 * fis.close()
-		 * ss.close();
-		 */
-
 		Socket s = null;
-		int serversocket = 7000;
+		Socket uploadSocket = null;
+		Socket downloadSocket = null;
+
 		try {
 			// 1o passo
 			s = new Socket(args[0], serversocket);
@@ -47,23 +38,53 @@ public class Client {
 
 			// 3o passo
 			while (true) {
+
+				commandMenu();
+
 				// READ STRING FROM KEYBOARD
 				try {
 					texto = reader.readLine();
-				} 
-				catch (Exception e) {
+				} catch (Exception e) {
 					System.out.println(e);
 				}
 
 				String[] command = texto.split(" ");
-				if (command[0].equals("UP")){
-					copyFileData(command[1], out);
+				if (command[0].equals("UP")) {
+
+					// enviar comando ao servidor
+					out.writeUTF(texto);
+
+					// esperar resposta do servidor
+					int port = in.readInt();
+					uploadSocket = new Socket(args[0], port);
+					DataInputStream upIn = new DataInputStream(uploadSocket.getInputStream());
+					DataOutputStream upOut = new DataOutputStream(uploadSocket.getOutputStream());
+
+					// meter o ficheiro num buffer para enviar ao servidor
+					copyFileData(command[1], upOut);
+					out.flush();
 				}
 
-				// WRITE INTO THE SOCKET
-				out.writeUTF(texto);
-				out.flush();
+				else if (command[0].equals("DW")) {
 
+					// enviar comando ao servidor
+					out.writeUTF(texto);
+
+					// esperar resposta do servidor
+					int port = in.readInt();
+					downloadSocket = new Socket(args[0], port);
+					DataInputStream inDownload = new DataInputStream(downloadSocket.getInputStream());
+					// DataOutputStream outDownload = new DataOutputStream(downloadSocket.getOutputStream());
+
+					// descarregar o ficheiro
+					downloadFileData(command[1] ,inDownload);
+				}
+
+				else {
+					// write into the socket
+					out.writeUTF(texto);
+					out.flush();
+				}
 			}
 
 		} catch (UnknownHostException e) {
@@ -80,35 +101,73 @@ public class Client {
 				} catch (IOException e) {
 					System.out.println("close:" + e.getMessage());
 				}
+
+			if (uploadSocket != null)
+				try {
+					uploadSocket.close();
+				} catch (IOException e) {
+					System.out.println("close:" + e.getMessage());
+				}
+			if (downloadSocket != null)
+				try {
+					downloadSocket.close();
+				} catch (IOException e) {
+					System.out.println("close:" + e.getMessage());
+				}
 		}
 	}
 
+	// this method is for copying data to send to server for UPLOAD
 	private static void copyFileData(String fileToUpload, DataOutputStream dos) throws IOException {
 
 		InputStream fis = null;
 
-		try{
+		try {
 			fis = new FileInputStream(new File(fileToUpload));
-			byte [] buf = new byte [1024];
+			byte[] buf = new byte[4096];
 			int bytesRead;
-			
+
 			do {
 				bytesRead = fis.read(buf);
-				if (bytesRead > 0) dos.write(buf, 0, bytesRead);
-			} while (bytesRead > - 1);
+				if (bytesRead > 0)
+					dos.write(buf, 0, bytesRead);
+			} while (bytesRead > -1);
 		}
 
-		catch(Exception e){
+		catch (Exception e) {
 			System.out.println(e);
 		}
-		
+
 		finally {
 			fis.close();
 			dos.close();
 		}
 	}
 
-	private void commandMenu() {
+	private static void downloadFileData(String fileToDownload, DataInputStream dis) throws IOException {
+		FileOutputStream fos = new FileOutputStream(fileToDownload);
+		int nread;
+		int offset = 0;
+		int bufsize = 4096;
+		byte[] buf = new byte[bufsize];
+
+		try {
+			do {
+				nread = dis.read(buf);
+				if (nread > 0) {
+					fos.write(buf, offset, nread);
+					offset += nread;
+				}
+			} while (nread > -1);
+		} catch (IOException e) {
+			System.out.println(e.getMessage());
+			e.printStackTrace();
+		} finally {
+			fos.close();
+		}
+	}
+
+	private static void commandMenu() {
 		System.out.println("COMMAND FORMAT: OPCODE|ARGS");
 		System.out.println("authentication: AU <username> <password>\n");
 		System.out.println("modify password: PW <username> <new password>\n");
