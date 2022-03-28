@@ -162,7 +162,8 @@ class Connection extends Thread {
         // --------------------------------------------------- CHANGE SERVER DIRECTORY
         else if (command[0].equalsIgnoreCase("CDS")){
             if (!this.username.isEmpty()){
-                this.directory = changeServerDirectory(this.directory, command[1]);
+                setDirectory(changeServerDirectory(getDirectory(), command[1]));
+                System.out.println("\n ---> New user directory: " + getDirectory() + " <---\n");
                 modify_user_info(this.username, this.password, this.directory, 2, command[1]);
             }
             else System.out.println("User not registered!");
@@ -214,14 +215,10 @@ class Connection extends Thread {
         // command = password if option = 1
         // command = new dir if option = 2
 
-        System.out.println("Password/dir to change: " + command);
         System.out.println("1 - userFilePath: " + userFilePath);
 
-        //TODO: erro aqui! --->
-        Scanner sc = new Scanner(new File(userFilePath));
-        //TODO: <--- erro aqui!
-
-        
+        String dir = new File("").getAbsolutePath() + "/users.txt";
+        Scanner sc = new Scanner(new File(dir));
 
         StringBuffer buffer = new StringBuffer();
         while (sc.hasNextLine()) buffer.append(sc.nextLine() + System.lineSeparator());
@@ -241,14 +238,14 @@ class Connection extends Thread {
         
         // change directory
         else if (option == 2){
-            this.directory = this.directory + "/" + command;
-            newLine = this.username + "," + this.password + "," + this.directory;
-            System.out.println("\n----------\nNew directory: " + this.directory + "----------\n");
+            setDirectory(getDirectory() + "/" + command);
+            newLine = this.username + "," + this.password + "," + getDirectory();
+            System.out.println("\n----------\nNew directory: " + this.directory + "\n----------\n");
         }
 
         // overwrite user info in users.txt
         fileContent = fileContent.replaceAll(oldLine, newLine);
-        try (FileWriter writer = new FileWriter(userFilePath)) {
+        try (FileWriter writer = new FileWriter(dir)) {
             writer.append(fileContent);
             writer.flush();
         }
@@ -259,13 +256,8 @@ class Connection extends Thread {
     // returns list of files in current directory (aka $ls)
     private void listServerDirectory() {
 
-        String dir = new File("").getAbsolutePath();
-        String newDir = dir + "/" + getDirectory();
-        System.out.println("[curDir]: " + dir);
-        System.out.println("[newDir]: " + newDir);
-        System.out.println("[listServerDirectory] getDirectory: " + getDirectory());
-        System.out.println("[listServerDirectory] userDir: " + System.getProperty("user.dir"));
-        File curDir = new File(newDir);
+        String dir = new File("").getAbsolutePath()+ "/" + getDirectory();
+        File curDir = new File(dir);
     
         System.out.println("\n\nCURRENT DIRECTORY");
 		File[] filesList = curDir.listFiles();
@@ -280,13 +272,13 @@ class Connection extends Thread {
     // handles remote directory navigation (aka $cd)
     private String changeServerDirectory(String curDir, String nextDir){
 
-        File newPath = new File(curDir + "/" + nextDir);
-        String newPathDir = curDir + "/" + nextDir;
+        String dir = new File("").getAbsolutePath() + "/" + getDirectory();
+        String newPath = dir + "/" + nextDir;
+        File newPathDir = new File(newPath);
 
-		if (!newPath.isDirectory()) System.out.println("Directory not found!");
+		if (!newPathDir.isDirectory()) System.out.println("Directory not found!");
 		else {
-			System.out.println("\n ---> New working directory: " + newPathDir + " <---\n");
-			return newPathDir;
+			return getDirectory() + "/" + nextDir;
 		}
 		return curDir;
     }
