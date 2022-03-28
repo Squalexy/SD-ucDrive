@@ -1,4 +1,4 @@
-squalexy,aaa,clients/squalexy/home/imagens/pasta
+squalexy,aaa,clients/squalexy/home/imagens
 squalexy2,bbb,clients/squalexy2/home
 squalexy3,ccc,clients/squalexy3/home
 squalexy4,dawdwa,clients/squalexy4/home

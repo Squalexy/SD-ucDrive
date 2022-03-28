@@ -17,7 +17,6 @@ public class PrimaryServer {
 
         int numero = 0;
         try {
-            
             System.out.println("A Escuta no Porto 7000");
             listenSocket = new ServerSocket(serverPort);
             System.out.println("LISTEN SOCKET=" + listenSocket);
@@ -98,9 +97,12 @@ class Connection extends Thread {
 
                 // servidor trata do pedido do cliente aqui
                 parseCommand(data);
-                System.out.println("Username: " + this.username);
-                System.out.println("Password: " + this.password);
-                System.out.println("Directory: " + this.directory);
+
+                // DEBUGGING ------------------------------------------------------
+                // System.out.println("Username: " + this.username);
+                // System.out.println("Password: " + this.password);
+                //System.out.println("Directory: " + this.directory);
+                // DEBUGGING ------------------------------------------------------
                 
                 // alterar estas próximas linhas depois, nao é necessário o "c"
                 for (Connection c : connections) {
@@ -123,10 +125,6 @@ class Connection extends Thread {
         String [] command = data.split(" ");
 
         usersFile = new File("users.txt");
-
-        System.out.print("0 - Command received: ");
-        for (String c: command) System.out.print("" + c + " ");
-        System.out.println();
 
         // --------------------------------------------------- CLIENT AUTHENTICATION
         if (command[0].equalsIgnoreCase("AU")){
@@ -163,8 +161,7 @@ class Connection extends Thread {
         else if (command[0].equalsIgnoreCase("CDS")){
             if (!this.username.isEmpty()){
                 String oldDir = getDirectory();
-                setDirectory(changeServerDirectory(getDirectory(), command[1]));
-                System.out.println("\n ---> New user directory: " + getDirectory() + " <---\n");
+                setDirectory(changeServerDirectory(oldDir, command[1]));
                 modify_user_info(this.username, this.password, oldDir, 2, command[1]);
             }
             else System.out.println("User not registered!");
@@ -216,8 +213,6 @@ class Connection extends Thread {
         // command = password if option = 1
         // command = new dir if option = 2
 
-        System.out.println("1 - userFilePath: " + userFilePath);
-
         String dir = new File("").getAbsolutePath() + "/users.txt";
         Scanner sc = new Scanner(new File(dir));
 
@@ -240,20 +235,14 @@ class Connection extends Thread {
         // change directory
         else if (option == 2){
             newLine = this.username + "," + this.password + "," + getDirectory();
-            System.out.println("[newLine]: " + newLine);
-            System.out.println("\n----------\nNew directory: " + this.directory + "\n----------\n");
         }
 
         // overwrite user info in users.txt
         fileContent = fileContent.replaceAll(oldLine, newLine);
-        System.out.println("[fileContent] : " + fileContent);
-        System.out.println("[oldLine] : " + oldLine);
-        System.out.println("[newLine] : " + newLine);
         try (FileWriter writer = new FileWriter(dir)) {
             writer.append(fileContent);
             writer.flush();
         }
-  
     }
 
 
@@ -263,9 +252,16 @@ class Connection extends Thread {
         String dir = new File("").getAbsolutePath()+ "/" + getDirectory();
         File curDir = new File(dir);
     
-        System.out.println("\n\nCURRENT DIRECTORY");
 		File[] filesList = curDir.listFiles();
-		if (curDir.list().length == 0) System.out.println("Empty.");
+        
+
+        if (!curDir.isDirectory()) {
+            System.out.println("Directory invalid.");
+            return;
+        }
+
+        System.out.println("\n\nCURRENT DIRECTORY");
+        if (curDir.list().length == 0) System.out.println("Empty.");
 		for (File f: filesList){
 			if (f.isDirectory()) System.out.println("---- " + f.getName() + " (FOLDER)");
 			if (f.isFile()) System.out.println("---- " +f.getName());
@@ -277,11 +273,19 @@ class Connection extends Thread {
     private String changeServerDirectory(String curDir, String nextDir){
 
         String dir = new File("").getAbsolutePath() + "/" + getDirectory();
+
+        if (nextDir.equals("..")){
+            File curDirFolder = new File(dir);
+            String previousFolder = curDirFolder.getAbsoluteFile().getParent();
+            System.out.println("[previousFolder] = " + previousFolder);
+        }
+
         String newPath = dir + "/" + nextDir;
         File newPathDir = new File(newPath);
 
 		if (!newPathDir.isDirectory()) System.out.println("Directory not found!");
 		else {
+            System.out.println("\n----------------\nNew user directory: " + getDirectory() + "/" + nextDir + "\n----------------\n");
 			return getDirectory() + "/" + nextDir;
 		}
 		return curDir;

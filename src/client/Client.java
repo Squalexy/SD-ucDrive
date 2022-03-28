@@ -174,9 +174,15 @@ public class Client {
 	}
 
 	private static void listClientDirectory(File curDir){
-		
-		System.out.println("\n\nCURRENT DIRECTORY");
+
 		File[] filesList = curDir.listFiles();
+		
+		if (!curDir.isDirectory()) {
+            System.out.println("Directory invalid.");
+            return;
+        }
+
+		System.out.println("\n\nCURRENT DIRECTORY");
 		if (curDir.list().length == 0) System.out.println("Empty.");
 		for (File f: filesList){
 			if (f.isDirectory()) System.out.println("---- " + f.getName() + " (FOLDER)");
