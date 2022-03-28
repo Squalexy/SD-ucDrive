@@ -328,12 +328,14 @@ class Connection extends Thread {
     // function that handles file download
     private void downloadFile(String filename){
         // ainda faltam muitas verificacoes e tratamento de excepcoes aqui
+        String dir = new File("").getAbsolutePath()+ "/" + getDirectory();
+
         try (ServerSocket listenSocket = new ServerSocket(0)){
             int port = listenSocket.getLocalPort();
             out.writeInt(port);
 
             Socket downloadSocket = listenSocket.accept(); // BLOQUEANTE
-            FileInputStream fis = new FileInputStream(new File(filename));
+            FileInputStream fis = new FileInputStream(new File(dir + "/" + filename));
             new FileDownload(downloadSocket, fis);
         }
         catch (IOException e) {
@@ -343,12 +345,16 @@ class Connection extends Thread {
 
     // function that handles file upload
     private void uploadFile(String filename){
+        String dir = new File("").getAbsolutePath()+ "/" + getDirectory();
+
         try (ServerSocket listenSocket = new ServerSocket(0)) {
             int port = listenSocket.getLocalPort();
             out.writeInt(port);
 
-            Socket uploadSocket = listenSocket.accept(); // BLOQUEANTE  
-            FileOutputStream fos = new FileOutputStream(new File(filename));
+            Socket uploadSocket = listenSocket.accept(); // BLOQUEANTE
+            File uploaded = new File(dir + "/" + filename);
+            uploaded.createNewFile();
+            FileOutputStream fos = new FileOutputStream(uploaded);
             new FileUpload(uploadSocket, fos);
         }
         catch (IOException e) {
@@ -521,15 +527,13 @@ class FileUpload extends Thread {
     @Override
     public void run(){
         int nread;
-        int offset = 0;
         int bufsize = 4096;
         byte[] buf = new byte[bufsize];
         try {
 			do{
 			    nread = in.read(buf);
 			    if (nread > 0){
-			        fos.write(buf, offset, nread);
-			        offset += nread;
+			        fos.write(buf, 0, nread);
 			    }
 			}
 			while (nread > -1);

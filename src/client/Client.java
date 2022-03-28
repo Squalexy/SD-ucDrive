@@ -37,8 +37,7 @@ public class Client {
 			InputStreamReader input = new InputStreamReader(System.in);
 			BufferedReader reader = new BufferedReader(input);
 
-			new MessageReader(in);
-			
+			// new MessageReader(in);
 
 			while (true) {
 
@@ -64,11 +63,11 @@ public class Client {
 					// esperar resposta do servidor
 					int port = in.readInt();
 					uploadSocket = new Socket(args[0], port);
-					DataInputStream upIn = new DataInputStream(uploadSocket.getInputStream());
+					// DataInputStream upIn = new DataInputStream(uploadSocket.getInputStream());
 					DataOutputStream upOut = new DataOutputStream(uploadSocket.getOutputStream());
 
 					// meter o ficheiro num buffer para enviar ao servidor
-					copyFileData(command[1], upOut);
+					copyFileData(curDir + "/" + command[1], upOut);
 					out.flush();
 				}
 
@@ -82,14 +81,14 @@ public class Client {
 					// enviar comando ao servidor
 					out.writeUTF(texto);
 
-					// esperar resposta do servidor
+					// esperar resposta do servidor;
 					int port = in.readInt();
 					downloadSocket = new Socket(args[0], port);
 					DataInputStream inDownload = new DataInputStream(downloadSocket.getInputStream());
 					// DataOutputStream outDownload = new DataOutputStream(downloadSocket.getOutputStream());
 
 					// descarregar o ficheiro
-					downloadFileData(command[1] ,inDownload);
+					downloadFileData(curDir + "/" + command[1] ,inDownload);
 				}
 
 				else if (command[0].equalsIgnoreCase("LSC")){
@@ -190,7 +189,6 @@ public class Client {
 	private static void downloadFileData(String fileToDownload, DataInputStream dis) throws IOException {
 		FileOutputStream fos = new FileOutputStream(fileToDownload);
 		int nread;
-		int offset = 0;
 		int bufsize = 4096;
 		byte[] buf = new byte[bufsize];
 
@@ -198,8 +196,7 @@ public class Client {
 			do {
 				nread = dis.read(buf);
 				if (nread > 0) {
-					fos.write(buf, offset, nread);
-					offset += nread;
+					fos.write(buf, 0, nread);
 				}
 			} while (nread > -1);
 		} catch (IOException e) {
