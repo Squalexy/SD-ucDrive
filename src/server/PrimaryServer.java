@@ -1,10 +1,9 @@
-package server;
-
-
 import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class PrimaryServer {
 
@@ -45,22 +44,6 @@ public class PrimaryServer {
                 }
         }
     }
-
-
-
-    // LEITURA DE FICHEIRO
-    // FileOutputStream fos = new FileOutputStream (new File(filename));
-    // int nread;
-    // byte [] buf = new byte[buffsize];
-    // do {
-    //     nread = fis.read(buf);
-    //     if (nread > 0) dos.write(buf, 0, nread);
-    // }
-    // while (nread-> -1);
-    // fis.close()
-    // ss.close();
-
-
 }
 
 class Connection extends Thread {
@@ -69,7 +52,6 @@ class Connection extends Thread {
     ArrayList<Connection> connections;
     Socket clientSocket;
     int thread_number;
-    File currentDir;
     File usersFile;
     String username = "";
     String password;
@@ -91,12 +73,19 @@ class Connection extends Thread {
         }
     }
 
+
+    public String getDirectory() {
+        return this.directory;
+    }
+
+    public void setDirectory(String directory) {
+        this.directory = directory;
+    }
+
+
     //=============================
     @Override
     public void run() {
-
-        // SETUP
-        usersFile = new File("users.txt");
 
         // LOOP
         String resposta;
@@ -109,8 +98,10 @@ class Connection extends Thread {
 
                 // servidor trata do pedido do cliente aqui
                 parseCommand(data);
+                System.out.println("Username: " + this.username);
+                System.out.println("Password: " + this.password);
+                System.out.println("Directory: " + this.directory);
                 
-
                 // alterar estas próximas linhas depois, nao é necessário o "c"
                 for (Connection c : connections) {
                     c.out.writeUTF(resposta);
@@ -131,13 +122,19 @@ class Connection extends Thread {
 
         String [] command = data.split(" ");
 
+        usersFile = new File("users.txt");
+
+        System.out.print("0 - Command received: ");
+        for (String c: command) System.out.print("" + c + " ");
+        System.out.println();
+
         // --------------------------------------------------- CLIENT AUTHENTICATION
-        if (command[0].toUpperCase().equals("AU")){
+        if (command[0].equalsIgnoreCase("AU")){
             if (this.username.isEmpty()){
                 if(find_user(command[1], command[2], usersFile)){
                     this.username = command[1];
                     this.password = command[2];
-                    System.out.println("User" + this.username + "authenticated!");
+                    System.out.println("User " + this.username + " authenticated!");
                 }
                 else System.out.println("Wrong username or password!");
             }
@@ -145,16 +142,17 @@ class Connection extends Thread {
         }
 
         // --------------------------------------------------- MODIFY PASSWORD
-        else if(command[0].toUpperCase().equals("PW")){
+        else if(command[0].equalsIgnoreCase("PW")){
             if (!this.username.isEmpty()){
-                modify_user_info(this.username, this.password, this.directory, 1, command[1]);
-                // TODO: tem que desconectar utilizador
+                System.out.println("Modifying password...");
+                modify_user_info(this.username, this.password, this.directory, 1, command[2]);
+                // TODO: must disconnect user after calling this function
             }
             else System.out.println("User not registered!");
         }
 
         // --------------------------------------------------- LIST SERVER DIRECTORY
-        else if (command[0].toUpperCase().equals("LSS")){
+        else if (command[0].equalsIgnoreCase("LSS")){
             if (!this.username.isEmpty()){
                 listServerDirectory();
             }
@@ -162,16 +160,16 @@ class Connection extends Thread {
         }
 
         // --------------------------------------------------- CHANGE SERVER DIRECTORY
-        else if (command[0].toUpperCase().equals("CDS")){
+        else if (command[0].equalsIgnoreCase("CDS")){
             if (!this.username.isEmpty()){
-                changeDirectoryServer(command[1]);
+                this.directory = changeServerDirectory(this.directory, command[1]);
                 modify_user_info(this.username, this.password, this.directory, 2, command[1]);
             }
             else System.out.println("User not registered!");
         }
 
         // --------------------------------------------------- DOWNLOAD FROM SERVER DIRECTORY
-        else if (command[0].toUpperCase().equals("DN")){
+        else if (command[0].equalsIgnoreCase("DN")){
             if (!this.username.isEmpty()){
                 downloadFile(command[1]);
             }
@@ -179,13 +177,16 @@ class Connection extends Thread {
         }
         
         // --------------------------------------------------- UPLOAD TO SERVER DIRECTORY
-        else if (command[0].toUpperCase().equals("UP")){
+        else if (command[0].equalsIgnoreCase("UP")){
             if (!this.username.isEmpty()){
                 uploadFile(command[1]);
             }
             else System.out.println("User not registered!");
         }
-        
+
+        // --------------------------------------------------- LS and CD from CLIENT: do nothing
+        else if (command[0].equalsIgnoreCase("LSC") || command[0].equalsIgnoreCase("CDC")) {;}
+
         else System.out.println("Wrong command!");
     }
 
@@ -194,7 +195,11 @@ class Connection extends Thread {
         try (Scanner scan = new Scanner(user_file)) {
             while (scan.hasNextLine()) {
                 String[] line = scan.nextLine().split(",");
-                if (line[0].equals(username) && line[1].equals(password)) return true;
+                if (line[0].equals(username) && line[1].equals(password)) {
+                    System.out.println(line[2]);
+                    setDirectory(line [2]);
+                    return true;
+                }
             }
         }
         return false;
@@ -204,18 +209,26 @@ class Connection extends Thread {
     // TCP
 
     // TODO: function that handles client password update--> must disconnect user after calling this function and authenticate him again
-    private void modify_user_info(String username, String password, String user_file_path, int option, String command) throws IOException {
+    private void modify_user_info(String username, String password, String userFilePath, int option, String command) throws IOException {
 
         // command = password if option = 1
         // command = new dir if option = 2
 
-        Scanner sc = new Scanner(new File(user_file_path));
+        System.out.println("Password/dir to change: " + command);
+        System.out.println("1 - userFilePath: " + userFilePath);
+
+        //TODO: erro aqui! --->
+        Scanner sc = new Scanner(new File(userFilePath));
+        //TODO: <--- erro aqui!
+
+        
+
         StringBuffer buffer = new StringBuffer();
         while (sc.hasNextLine()) buffer.append(sc.nextLine() + System.lineSeparator());
         String fileContent = buffer.toString();
         sc.close();
 
-        String oldLine = username + "," + password + "," + user_file_path;
+        String oldLine = username + "," + password + "," + userFilePath;
         String newLine = "";
 
         // change password
@@ -235,7 +248,7 @@ class Connection extends Thread {
 
         // overwrite user info in users.txt
         fileContent = fileContent.replaceAll(oldLine, newLine);
-        try (FileWriter writer = new FileWriter(user_file_path)) {
+        try (FileWriter writer = new FileWriter(userFilePath)) {
             writer.append(fileContent);
             writer.flush();
         }
@@ -245,36 +258,37 @@ class Connection extends Thread {
 
     // returns list of files in current directory (aka $ls)
     private void listServerDirectory() {
-        if (currentDir.isDirectory()) {
-            // TODO: SYNCHRONISE!!! and expand
-            File[] paths = currentDir.listFiles();
-            System.out.println("\n-- " + currentDir);
-            if (!paths.toString().isEmpty()){
-                for (File path : paths) {
-                    System.out.println("---- " + path);
-                }
-            }
-            else System.out.println("empty");
-        }
-        else System.out.println("Current dir isn't a valid directory!");
+
+        String dir = new File("").getAbsolutePath();
+        String newDir = dir + "/" + getDirectory();
+        System.out.println("[curDir]: " + dir);
+        System.out.println("[newDir]: " + newDir);
+        System.out.println("[listServerDirectory] getDirectory: " + getDirectory());
+        System.out.println("[listServerDirectory] userDir: " + System.getProperty("user.dir"));
+        File curDir = new File(newDir);
+    
+        System.out.println("\n\nCURRENT DIRECTORY");
+		File[] filesList = curDir.listFiles();
+		if (curDir.list().length == 0) System.out.println("Empty.");
+		for (File f: filesList){
+			if (f.isDirectory()) System.out.println("---- " + f.getName() + " (FOLDER)");
+			if (f.isFile()) System.out.println("---- " +f.getName());
+		}
+		System.out.println();
     }
 
     // handles remote directory navigation (aka $cd)
-    private void changeDirectoryServer(String directory){
-        if (currentDir.isDirectory()) {
-            File[] paths = currentDir.listFiles();
-            // if path isn't empty, you can do CD
-            if (!paths.toString().isEmpty()) {
-                // checks all available folders
-                for (File path : paths) {
-                    if (path.toString().equals(directory) && path.isDirectory()){
-                        this.directory += "path";
-                    }
-                }
-            }
-            else System.out.println("\nFolder is empty!\n");
-        }
-        else System.out.println("Current dir isn't a valid directory!");
+    private String changeServerDirectory(String curDir, String nextDir){
+
+        File newPath = new File(curDir + "/" + nextDir);
+        String newPathDir = curDir + "/" + nextDir;
+
+		if (!newPath.isDirectory()) System.out.println("Directory not found!");
+		else {
+			System.out.println("\n ---> New working directory: " + newPathDir + " <---\n");
+			return newPathDir;
+		}
+		return curDir;
     }
 
     // function that handles file download
