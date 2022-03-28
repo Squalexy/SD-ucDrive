@@ -162,9 +162,10 @@ class Connection extends Thread {
         // --------------------------------------------------- CHANGE SERVER DIRECTORY
         else if (command[0].equalsIgnoreCase("CDS")){
             if (!this.username.isEmpty()){
+                String oldDir = getDirectory();
                 setDirectory(changeServerDirectory(getDirectory(), command[1]));
                 System.out.println("\n ---> New user directory: " + getDirectory() + " <---\n");
-                modify_user_info(this.username, this.password, this.directory, 2, command[1]);
+                modify_user_info(this.username, this.password, oldDir, 2, command[1]);
             }
             else System.out.println("User not registered!");
         }
@@ -238,13 +239,16 @@ class Connection extends Thread {
         
         // change directory
         else if (option == 2){
-            setDirectory(getDirectory() + "/" + command);
             newLine = this.username + "," + this.password + "," + getDirectory();
+            System.out.println("[newLine]: " + newLine);
             System.out.println("\n----------\nNew directory: " + this.directory + "\n----------\n");
         }
 
         // overwrite user info in users.txt
         fileContent = fileContent.replaceAll(oldLine, newLine);
+        System.out.println("[fileContent] : " + fileContent);
+        System.out.println("[oldLine] : " + oldLine);
+        System.out.println("[newLine] : " + newLine);
         try (FileWriter writer = new FileWriter(dir)) {
             writer.append(fileContent);
             writer.flush();
