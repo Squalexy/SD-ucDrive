@@ -103,12 +103,6 @@ class Connection extends Thread {
                 // System.out.println("Password: " + this.password);
                 //System.out.println("Directory: " + this.directory);
                 // DEBUGGING ------------------------------------------------------
-                
-                // alterar estas próximas linhas depois, nao é necessário o "c"
-                for (Connection c : connections) {
-                    c.out.writeUTF(resposta);
-                    c.out.flush();
-                }
             }
         } catch (EOFException e) {
             System.out.println("EOF:" + e);
@@ -128,65 +122,98 @@ class Connection extends Thread {
 
         // --------------------------------------------------- CLIENT AUTHENTICATION
         if (command[0].equalsIgnoreCase("AU")){
+            if (command.length != 3) {
+                out.writeUTF("\n[ERROR] AU <username> <password>\n");
+                return;
+            }
+
             if (this.username.isEmpty()){
                 if(find_user(command[1], command[2], usersFile)){
                     this.username = command[1];
                     this.password = command[2];
-                    System.out.println("User " + this.username + " authenticated!");
+                    out.writeUTF("\n\n-------\nWelcome " + this.username + ", you are now authenticated!\n-------\n");
                 }
-                else System.out.println("Wrong username or password!");
+                else out.writeUTF("\n[ERROR] Wrong username or password!\n");
             }
-            else if (this.username.equals(command[0])) System.out.println("User already registered!");
+            else if (this.username.equals(command[0])) out.writeUTF("\n[ERROR] You're already registered!\n");
         }
 
         // --------------------------------------------------- MODIFY PASSWORD
         else if(command[0].equalsIgnoreCase("PW")){
+            if (command.length != 3) {
+                out.writeUTF("\n[ERROR] PW <password> <new password>\n");
+                return;
+            }
+
             if (!this.username.isEmpty()){
-                System.out.println("Modifying password...");
-                modify_user_info(this.username, this.password, this.directory, 1, command[2]);
+                modify_user_info(this.username, this.password, this.directory, 1, command[2], out);
                 // TODO: must disconnect user after calling this function
             }
-            else System.out.println("User not registered!");
+            else out.writeUTF("\n[ERROR] You're not registered!\n");
         }
 
         // --------------------------------------------------- LIST SERVER DIRECTORY
         else if (command[0].equalsIgnoreCase("LSS")){
-            if (!this.username.isEmpty()){
-                listServerDirectory();
+            if (command.length != 1) {
+                out.writeUTF("\n[ERROR] LSS\n");
+                return;
             }
-            else System.out.println("User not registered!");
+
+            if (!this.username.isEmpty()){
+                listServerDirectory(out);
+            }
+            else out.writeUTF("\n[ERROR] You're not registered!\n");
         }
 
         // --------------------------------------------------- CHANGE SERVER DIRECTORY
         else if (command[0].equalsIgnoreCase("CDS")){
+            if (command.length != 2) {
+                out.writeUTF("\n[ERROR] CDS <new directory>\n");
+                return;
+            }
+
             if (!this.username.isEmpty()){
                 String oldDir = getDirectory();
-                setDirectory(changeServerDirectory(oldDir, command[1]));
-                modify_user_info(this.username, this.password, oldDir, 2, command[1]);
+                setDirectory(changeServerDirectory(oldDir, command[1], out));
+                modify_user_info(this.username, this.password, oldDir, 2, command[1], out);
             }
-            else System.out.println("User not registered!");
+            else out.writeUTF("\n[ERROR] You're not registered!\n");
         }
 
         // --------------------------------------------------- DOWNLOAD FROM SERVER DIRECTORY
         else if (command[0].equalsIgnoreCase("DN")){
+            if (command.length != 2) {
+                out.writeUTF("\n[ERROR] DN <filename>\n");
+                return;
+            }
+
             if (!this.username.isEmpty()){
                 downloadFile(command[1]);
             }
-            else System.out.println("User not registered!");
+            else out.writeUTF("\n[ERROR] You're registered!\n");
         }
         
         // --------------------------------------------------- UPLOAD TO SERVER DIRECTORY
         else if (command[0].equalsIgnoreCase("UP")){
+            if (command.length != 2) {
+                out.writeUTF("\n[ERROR] UP <filename>\n");
+                return;
+            }
+
             if (!this.username.isEmpty()){
                 uploadFile(command[1]);
             }
-            else System.out.println("User not registered!");
+            else out.writeUTF("\n[ERROR] You're not registered!\n");
         }
 
         // --------------------------------------------------- LS and CD from CLIENT: do nothing
-        else if (command[0].equalsIgnoreCase("LSC") || command[0].equalsIgnoreCase("CDC")) {;}
+        else if (command[0].equalsIgnoreCase("LSC") || command[0].equalsIgnoreCase("CDC")) {
+            if (command.length != 1) {
+                out.writeUTF("\n[ERROR] LSC/CDC\n");
+            }
+        }
 
-        else System.out.println("Wrong command!");
+        else out.writeUTF("\n[ERROR] Wrong command!\n");
     }
 
     // checks if user exists "in database"
@@ -208,7 +235,7 @@ class Connection extends Thread {
     // TCP
 
     // TODO: function that handles client password update--> must disconnect user after calling this function and authenticate him again
-    private void modify_user_info(String username, String password, String userFilePath, int option, String command) throws IOException {
+    private void modify_user_info(String username, String password, String userFilePath, int option, String command, DataOutputStream out) throws IOException {
 
         // command = password if option = 1
         // command = new dir if option = 2
@@ -226,10 +253,9 @@ class Connection extends Thread {
 
         // change password
         if (option == 1) {
-            this.directory = System.getProperty("user.dir") + "/home";
-            newLine = this.username + "," + command + "," + this.directory;
-            System.out.println("\n----------\nPassword changed!\n----------\n");
-            System.out.println();
+            setDirectory("clients/" + this.username + "/home");
+            newLine = this.username + "," + command + "," + getDirectory();
+            out.writeUTF("\n\n-------\nPassword changed!\n-------\n");
         }
         
         // change directory
@@ -247,7 +273,7 @@ class Connection extends Thread {
 
 
     // returns list of files in current directory (aka $ls)
-    private void listServerDirectory() {
+    private void listServerDirectory(DataOutputStream out) throws IOException {
 
         String dir = new File("").getAbsolutePath()+ "/" + getDirectory();
         File curDir = new File(dir);
@@ -256,36 +282,44 @@ class Connection extends Thread {
         
 
         if (!curDir.isDirectory()) {
-            System.out.println("Directory invalid.");
+            out.writeUTF("\n[ERROR] Invalid directory!\n");
             return;
         }
 
-        System.out.println("\n\nCURRENT DIRECTORY");
-        if (curDir.list().length == 0) System.out.println("Empty.");
+        out.writeUTF("\n[server dir]: " + getDirectory());
+        if (curDir.list().length == 0) out.writeUTF("Empty.");
 		for (File f: filesList){
-			if (f.isDirectory()) System.out.println("---- " + f.getName() + " (FOLDER)");
-			if (f.isFile()) System.out.println("---- " +f.getName());
+			if (f.isDirectory()) out.writeUTF("---- " + f.getName() + " (FOLDER)");
+			if (f.isFile()) out.writeUTF("---- " +f.getName());
 		}
-		System.out.println();
+		out.writeUTF("\n");
     }
 
     // handles remote directory navigation (aka $cd)
-    private String changeServerDirectory(String curDir, String nextDir){
-
-        String dir = new File("").getAbsolutePath() + "/" + getDirectory();
+    private String changeServerDirectory(String curDir, String nextDir, DataOutputStream out) throws IOException{
 
         if (nextDir.equals("..")){
-            File curDirFolder = new File(dir);
-            String previousFolder = curDirFolder.getAbsoluteFile().getParent();
-            System.out.println("[previousFolder] = " + previousFolder);
+            File curDirFolder = new File(curDir);
+            String previousFolder = curDirFolder.getParent();
+            String[] folders = previousFolder.split("/");
+
+            if (!folders[folders.length - 1].equals(this.username)){
+                out.writeUTF("\n----------------\nNew [server] directory: " + previousFolder + "\n----------------\n");
+                return previousFolder;
+            }
+            else {
+                out.writeUTF("[ERROR] Already on home page!");
+                return curDir;
+            }
         }
 
+        String dir = new File("").getAbsolutePath() + "/" + getDirectory();
         String newPath = dir + "/" + nextDir;
         File newPathDir = new File(newPath);
 
-		if (!newPathDir.isDirectory()) System.out.println("Directory not found!");
+		if (!newPathDir.isDirectory()) out.writeUTF("\n[ERROR] Directory not found!\n");
 		else {
-            System.out.println("\n----------------\nNew user directory: " + getDirectory() + "/" + nextDir + "\n----------------\n");
+            out.writeUTF("\n----------------\nNew [server] directory: " + getDirectory() + "/" + nextDir + "\n----------------\n");
 			return getDirectory() + "/" + nextDir;
 		}
 		return curDir;

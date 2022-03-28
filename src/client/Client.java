@@ -22,6 +22,7 @@ public class Client {
 		Socket uploadSocket = null;
 		Socket downloadSocket = null;
 		File curDir = new File(".");
+		String directory = "client";
 
 		try {
 			s = new Socket(args[0], serversocket);
@@ -37,6 +38,7 @@ public class Client {
 			BufferedReader reader = new BufferedReader(input);
 
 			new MessageReader(in);
+			
 
 			while (true) {
 
@@ -50,6 +52,11 @@ public class Client {
 				String[] command = texto.split(" ");
 
 				if (command[0].equals("UP")) {
+
+					if (command.length != 2) {
+						System.out.println("\n[ERROR] UP <filename>\n");
+						continue;
+					}
 
 					// enviar comando ao servidor
 					out.writeUTF(texto);
@@ -65,7 +72,12 @@ public class Client {
 					out.flush();
 				}
 
-				else if (command[0].equalsIgnoreCase("DW")) {
+				else if (command[0].equalsIgnoreCase("DN")) {
+
+					if (command.length != 2) {
+						System.out.println("\n[ERROR] DN <filename>\n");
+						continue;
+					}
 
 					// enviar comando ao servidor
 					out.writeUTF(texto);
@@ -80,12 +92,35 @@ public class Client {
 					downloadFileData(command[1] ,inDownload);
 				}
 
-				else if (command[0].equalsIgnoreCase("LSC"))listClientDirectory(curDir);
+				else if (command[0].equalsIgnoreCase("LSC")){
 
-				else if (command[0].equalsIgnoreCase("CDC")) curDir = changeClientDirectory(curDir, command[1]);
+					if (command.length != 1) {
+						System.out.println("\n[ERROR] LSC\n");
+						continue;
+					}
 
-				else if (command[0].equalsIgnoreCase("MENU")) commandMenu();
+					listClientDirectory(curDir);
+				}
 
+				else if (command[0].equalsIgnoreCase("CDC")) {
+
+					if (command.length != 2) {
+						System.out.println("\n[ERROR] CDC <new directory>\n");
+						continue;
+					}
+
+					curDir = changeClientDirectory(curDir, command[1]);
+				}
+
+				else if (command[0].equalsIgnoreCase("MENU")) {
+
+					if (command.length != 1) {
+						System.out.println("\n[ERROR] MENU\n");
+						continue;
+					}
+
+					commandMenu();
+				}
 				else {
 					// write into the socket
 					out.writeUTF(texto);
@@ -121,6 +156,8 @@ public class Client {
 					System.out.println("close:" + e.getMessage());
 				}
 		}
+
+		
 	}
 
 	// this method is for copying data to send to server for UPLOAD
@@ -178,11 +215,11 @@ public class Client {
 		File[] filesList = curDir.listFiles();
 		
 		if (!curDir.isDirectory()) {
-            System.out.println("Directory invalid.");
+            System.out.println("\n[ERROR] Invalid directory!\n");
             return;
         }
 
-		System.out.println("\n\nCURRENT DIRECTORY");
+		System.out.println("\n\n[local dir]: " + curDir.getName());
 		if (curDir.list().length == 0) System.out.println("Empty.");
 		for (File f: filesList){
 			if (f.isDirectory()) System.out.println("---- " + f.getName() + " (FOLDER)");
@@ -193,12 +230,25 @@ public class Client {
 
 	private static File changeClientDirectory(File curDir, String nextDir){
 
+		if (nextDir.equals("..")){
+            String previousFolder = curDir.getParent();
+            if (!curDir.getName().equals(".")){
+				File previousPath = new File(new File("").getAbsolutePath() + "/" + previousFolder);
+                System.out.println("\n----------------\nNew [local] directory: " + previousFolder + "\n----------------\n");
+                return previousPath;
+            }
+            else {
+                System.out.println("\n[ERROR] Already on source folder!\n");
+                return curDir;
+            }
+        }
+
 		File newPath = new File(curDir + "/" + nextDir);
 		String newPathDir = curDir + "/" + nextDir;
 
 		if (!newPath.isDirectory()) System.out.println("Directory not found!");
 		else {
-			System.out.println("\n ---> New working directory: " + newPathDir + " <---\n");
+			System.out.println("\n----------------\nNew [local] directory: " + newPathDir + "\n----------------\n");
 			return newPath;
 		}
 		return curDir;
@@ -206,16 +256,16 @@ public class Client {
 
 	private static void commandMenu() {
 		System.out.println("\n---------------------------------------------------------");
-		System.out.println("COMMAND FORMAT: OPCODE|ARGS\n");
-		System.out.println("> authentication: AU <username> <password>");
-		System.out.println("> modify password: PW <username> <new password>");
-		System.out.println("> list SERVER files: LSs");
-		System.out.println("> list CLIENT files: LSc");
-		System.out.println("> change SERVER directory: CDs <new directory>");
-		System.out.println("> change CLIENT directory: CDc <new directory>");
-		System.out.println("> download file: DN <filename>");
-		System.out.println("> upload file: UP <filename>");
-		System.out.println("> show menu again: MENU");
+		System.out.println("COMMAND FORMAT: OPCODE <ARGS>\n");
+		System.out.println("[authentication] AU <username> <password>");
+		System.out.println("[modify password] PW <username> <new password>");
+		System.out.println("[list SERVER files] LSS");
+		System.out.println("[list CLIENT files] LSC");
+		System.out.println("[change SERVER directory] CDs <new directory>");
+		System.out.println("[change CLIENT directory] CDc <new directory>");
+		System.out.println("[download file] DN <filename>");
+		System.out.println("[upload file] UP <filename>");
+		System.out.println("[show menu again] MENU");
 		System.out.println("---------------------------------------------------------\n");
 	}
 }
@@ -231,12 +281,12 @@ class MessageReader extends Thread {
 	// =============================
 	@Override
 	public void run() {
+		
 		try {
 			while (true) {
 				// READ FROM SOCKET
 				String data = in.readUTF();
-				System.out.println("Received: " + data);
-
+				System.out.println(data);
 			}
 		} catch (EOFException e) {
 			System.out.println("EOF:" + e);
