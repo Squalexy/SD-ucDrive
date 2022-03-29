@@ -1,12 +1,5 @@
-
-
 import java.net.*;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Scanner;
-
-import javax.sound.midi.Synthesizer;
-import javax.sound.midi.SysexMessage;
 
 public class Client {
 
@@ -22,7 +15,6 @@ public class Client {
 		Socket uploadSocket = null;
 		Socket downloadSocket = null;
 		File curDir = new File(".");
-		String directory = "client";
 
 		try {
 			s = new Socket(args[0], serversocket);
@@ -49,6 +41,7 @@ public class Client {
 				}
 
 				String[] command = texto.split(" ");
+				System.out.println("\n[command]: " + command[0] + "\n");
 
 				if (command[0].equals("UP")) {
 
@@ -89,6 +82,7 @@ public class Client {
 
 					// descarregar o ficheiro
 					downloadFileData(curDir + "/" + command[1] ,inDownload);
+					out.flush();
 				}
 
 				else if (command[0].equalsIgnoreCase("LSC")){
@@ -125,6 +119,10 @@ public class Client {
 					out.writeUTF(texto);
 					out.flush();
 				}
+
+				String data = in.readUTF();
+				System.out.println(data);
+
 			}
 
 		} catch (UnknownHostException e) {
