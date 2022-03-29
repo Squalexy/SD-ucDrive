@@ -40,8 +40,8 @@ public class Client {
 					System.out.println(e);
 				}
 
+				String data;
 				String[] command = texto.split(" ");
-				System.out.println("\n[command]: " + command[0] + "\n");
 
 				if (command[0].equals("UP")) {
 
@@ -61,6 +61,7 @@ public class Client {
 
 					// meter o ficheiro num buffer para enviar ao servidor
 					copyFileData(curDir + "/" + command[1], upOut);
+					System.out.println("\n[SUCCESS] Upload Finished!\n");
 					out.flush();
 				}
 
@@ -82,6 +83,7 @@ public class Client {
 
 					// descarregar o ficheiro
 					downloadFileData(curDir + "/" + command[1] ,inDownload);
+					System.out.println("\n[SUCCESS] Download Finished!\n");
 					out.flush();
 				}
 
@@ -118,11 +120,9 @@ public class Client {
 					// write into the socket
 					out.writeUTF(texto);
 					out.flush();
+					data = in.readUTF();
+					System.out.println(data);
 				}
-
-				String data = in.readUTF();
-				System.out.println(data);
-
 			}
 
 		} catch (UnknownHostException e) {

@@ -304,6 +304,8 @@ class Connection extends Thread {
     // returns list of files in current directory (aka $ls)
     private void listServerDirectory(DataOutputStream out) throws IOException {
 
+        //TODO: relatório: indicar o porquê de stringbuilder (muitos writeUTF seguidos não dava)
+
         String dir = new File("").getAbsolutePath() + "/" + getDirectory();
         File curDir = new File(dir);
 
@@ -315,21 +317,28 @@ class Connection extends Thread {
             return;
         }
 
-        out.writeUTF("\n[server dir]: " + getDirectory());
-        out.flush();
-        if (curDir.list().length == 0)
-            out.writeUTF("Empty.");
-        out.flush();
-        for (File f : filesList) {
-            if (f.isDirectory())
-                out.writeUTF("---- " + f.getName() + " (FOLDER)");
+        StringBuilder display = new StringBuilder();
+        display.append("\n[server dir]: " + getDirectory());
+
+        if (curDir.list().length == 0) {
+            display.append("\nEmpty.");
+            out.writeUTF(display.toString());
             out.flush();
-            if (f.isFile())
-                out.writeUTF("---- " + f.getName());
-            out.flush();
+            return;
         }
-        out.writeUTF("\n");
+
+        for (File f : filesList) {
+            if (f.isDirectory()) {
+                display.append("\n---- " + f.getName() + " (FOLDER)");
+
+            }
+            if (f.isFile()) {
+                display.append("\n---- " + f.getName());
+            }
+        }
+        out.writeUTF(display.toString() + "\n");
         out.flush();
+
     }
 
     // handles remote directory navigation (aka $cd)
