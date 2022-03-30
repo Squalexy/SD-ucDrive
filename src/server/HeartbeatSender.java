@@ -13,10 +13,10 @@ import java.net.UnknownHostException;
 public class HeartbeatSender extends Thread{
     
     private static final int maxfailedrounds = 5;
-    private static final int timeout = 5000;
+    private static final int timeout = 1000;
     private static final int bufsize = 4096;
-    private static final int port = 7000;
-    private static final int period = 10000;
+    private static final int port = 7001;
+    private static final int period = 1000;
     
 
     public HeartbeatSender() throws UnknownHostException{

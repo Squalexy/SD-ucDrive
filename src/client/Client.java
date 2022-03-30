@@ -3,8 +3,7 @@ import java.io.*;
 
 public class Client {
 
-	private static final int serversocket = 7000;
-	private static final int secondaryServerSocket = 6000;
+	private static int serversocket = 7000;
 
 	public static void main(String args[]) {
 		if (args.length == 0) {
@@ -17,7 +16,7 @@ public class Client {
 		Socket downloadSocket = null;
 		File curDir = new File(".");
 
-	
+		while (true){
 
 			try {
 				s = new Socket(args[0], serversocket);
@@ -133,10 +132,12 @@ public class Client {
 				System.out.println("Sock:" + e.getMessage());
 				// nao conseguiu encontrar o hostname
 			} catch (EOFException e) {
-				System.out.println("EOF:" + e.getMessage());
+				System.out.println("Server went down!");
+				serversocket = 6000;
+			} catch (ConnectException e){
+				System.out.println("Trying to connect to server...");
 			} catch (IOException e) {
 				System.out.println("IO:" + e.getMessage());
-				e.printStackTrace();
 			} finally {
 				if (s != null)
 					try {
@@ -158,7 +159,7 @@ public class Client {
 						System.out.println("close:" + e.getMessage());
 					}
 			}
-		
+		}
 
 	}
 

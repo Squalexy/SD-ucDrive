@@ -9,7 +9,7 @@ import java.net.UnknownHostException;
 
 public class HeartbeatReceiver extends Thread {
 
-    private static final int port = 7000;
+    private static final int port = 7001;
     private static final int bufsize = 4096;
 
     public HeartbeatReceiver() throws UnknownHostException {

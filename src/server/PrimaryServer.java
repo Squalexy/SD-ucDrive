@@ -20,13 +20,12 @@ public class PrimaryServer {
             System.out.println("A Escuta no Porto 7000");
             listenSocket = new ServerSocket(serverPort);
             System.out.println("LISTEN SOCKET=" + listenSocket);
+            new HeartbeatReceiver();
 
             while (true) {
                 clientSocket = listenSocket.accept(); // BLOQUEANTE
                 System.out.println("CLIENT_SOCKET (created at accept())=" + clientSocket);
                 numero++;
-
-                new HeartbeatReceiver();
                 new Connection(clientSocket, numero, connections);
             }
         } catch (IOException e) {
