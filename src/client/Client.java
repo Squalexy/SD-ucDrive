@@ -4,6 +4,7 @@ import java.io.*;
 public class Client {
 
 	private static final int serversocket = 7000;
+	private static final int secondaryServerSocket = 6000;
 
 	public static void main(String args[]) {
 		if (args.length == 0) {
@@ -16,145 +17,149 @@ public class Client {
 		Socket downloadSocket = null;
 		File curDir = new File(".");
 
-		try {
-			s = new Socket(args[0], serversocket);
-			// System.out.println("SOCKET=" + s);
+	
 
-			commandMenu();
+			try {
+				s = new Socket(args[0], serversocket);
+				s.setSoTimeout(1000 * 5);
+				// System.out.println("SOCKET=" + s);
 
-			DataInputStream in = new DataInputStream(s.getInputStream());
-			DataOutputStream out = new DataOutputStream(s.getOutputStream());
+				commandMenu();
 
-			String texto = "";
-			InputStreamReader input = new InputStreamReader(System.in);
-			BufferedReader reader = new BufferedReader(input);
+				DataInputStream in = new DataInputStream(s.getInputStream());
+				DataOutputStream out = new DataOutputStream(s.getOutputStream());
 
-			// new MessageReader(in);
+				String texto = "";
+				InputStreamReader input = new InputStreamReader(System.in);
+				BufferedReader reader = new BufferedReader(input);
 
-			while (true) {
+				// new MessageReader(in);
 
-				// READ STRING FROM KEYBOARD
-				try {
-					texto = reader.readLine();
-				} catch (Exception e) {
-					System.out.println(e);
-				}
+				while (true) {
 
-				String data;
-				String[] command = texto.split(" ");
-
-				if (command[0].equals("UP")) {
-
-					if (command.length != 2) {
-						System.out.println("\n[ERROR] UP <filename>\n");
-						continue;
+					// READ STRING FROM KEYBOARD
+					try {
+						texto = reader.readLine();
+					} catch (Exception e) {
+						System.out.println(e);
 					}
 
-					// enviar comando ao servidor
-					out.writeUTF(texto);
+					String data;
+					String[] command = texto.split(" ");
 
-					// esperar resposta do servidor
-					int port = in.readInt();
-					uploadSocket = new Socket(args[0], port);
-					// DataInputStream upIn = new DataInputStream(uploadSocket.getInputStream());
-					DataOutputStream upOut = new DataOutputStream(uploadSocket.getOutputStream());
+					if (command[0].equals("UP")) {
 
-					// meter o ficheiro num buffer para enviar ao servidor
-					copyFileData(curDir + "/" + command[1], upOut);
-					System.out.println("\n[SUCCESS] Upload Finished!\n");
-					out.flush();
-				}
+						if (command.length != 2) {
+							System.out.println("\n[ERROR] UP <filename>\n");
+							continue;
+						}
 
-				else if (command[0].equalsIgnoreCase("DN")) {
+						// enviar comando ao servidor
+						out.writeUTF(texto);
 
-					if (command.length != 2) {
-						System.out.println("\n[ERROR] DN <filename>\n");
-						continue;
+						// esperar resposta do servidor
+						int port = in.readInt();
+						uploadSocket = new Socket(args[0], port);
+						// DataInputStream upIn = new DataInputStream(uploadSocket.getInputStream());
+						DataOutputStream upOut = new DataOutputStream(uploadSocket.getOutputStream());
+
+						// meter o ficheiro num buffer para enviar ao servidor
+						copyFileData(curDir + "/" + command[1], upOut);
+						System.out.println("\n[SUCCESS] Upload Finished!\n");
+						out.flush();
 					}
 
-					// enviar comando ao servidor
-					out.writeUTF(texto);
+					else if (command[0].equalsIgnoreCase("DN")) {
 
-					// esperar resposta do servidor;
-					int port = in.readInt();
-					downloadSocket = new Socket(args[0], port);
-					DataInputStream inDownload = new DataInputStream(downloadSocket.getInputStream());
-					// DataOutputStream outDownload = new DataOutputStream(downloadSocket.getOutputStream());
+						if (command.length != 2) {
+							System.out.println("\n[ERROR] DN <filename>\n");
+							continue;
+						}
 
-					// descarregar o ficheiro
-					downloadFileData(curDir + "/" + command[1] ,inDownload);
-					System.out.println("\n[SUCCESS] Download Finished!\n");
-					out.flush();
-				}
+						// enviar comando ao servidor
+						out.writeUTF(texto);
 
-				else if (command[0].equalsIgnoreCase("LSC")){
+						// esperar resposta do servidor;
+						int port = in.readInt();
+						downloadSocket = new Socket(args[0], port);
+						DataInputStream inDownload = new DataInputStream(downloadSocket.getInputStream());
+						// DataOutputStream outDownload = new
+						// DataOutputStream(downloadSocket.getOutputStream());
 
-					if (command.length != 1) {
-						System.out.println("\n[ERROR] LSC\n");
-						continue;
+						// descarregar o ficheiro
+						downloadFileData(curDir + "/" + command[1], inDownload);
+						System.out.println("\n[SUCCESS] Download Finished!\n");
+						out.flush();
 					}
 
-					listClientDirectory(curDir);
-				}
+					else if (command[0].equalsIgnoreCase("LSC")) {
 
-				else if (command[0].equalsIgnoreCase("CDC")) {
+						if (command.length != 1) {
+							System.out.println("\n[ERROR] LSC\n");
+							continue;
+						}
 
-					if (command.length != 2) {
-						System.out.println("\n[ERROR] CDC <new directory>\n");
-						continue;
+						listClientDirectory(curDir);
 					}
 
-					curDir = changeClientDirectory(curDir, command[1]);
-				}
+					else if (command[0].equalsIgnoreCase("CDC")) {
 
-				else if (command[0].equalsIgnoreCase("MENU")) {
+						if (command.length != 2) {
+							System.out.println("\n[ERROR] CDC <new directory>\n");
+							continue;
+						}
 
-					if (command.length != 1) {
-						System.out.println("\n[ERROR] MENU\n");
-						continue;
+						curDir = changeClientDirectory(curDir, command[1]);
 					}
 
-					commandMenu();
+					else if (command[0].equalsIgnoreCase("MENU")) {
+
+						if (command.length != 1) {
+							System.out.println("\n[ERROR] MENU\n");
+							continue;
+						}
+
+						commandMenu();
+					} else {
+						// write into the socket
+						out.writeUTF(texto);
+						out.flush();
+						data = in.readUTF();
+						System.out.println(data);
+					}
 				}
-				else {
-					// write into the socket
-					out.writeUTF(texto);
-					out.flush();
-					data = in.readUTF();
-					System.out.println(data);
-				}
+
+			} catch (UnknownHostException e) {
+				System.out.println("Sock:" + e.getMessage());
+				// nao conseguiu encontrar o hostname
+			} catch (EOFException e) {
+				System.out.println("EOF:" + e.getMessage());
+			} catch (IOException e) {
+				System.out.println("IO:" + e.getMessage());
+				e.printStackTrace();
+			} finally {
+				if (s != null)
+					try {
+						s.close();
+					} catch (IOException e) {
+						System.out.println("close:" + e.getMessage());
+					}
+
+				if (uploadSocket != null)
+					try {
+						uploadSocket.close();
+					} catch (IOException e) {
+						System.out.println("close:" + e.getMessage());
+					}
+				if (downloadSocket != null)
+					try {
+						downloadSocket.close();
+					} catch (IOException e) {
+						System.out.println("close:" + e.getMessage());
+					}
 			}
-
-		} catch (UnknownHostException e) {
-			System.out.println("Sock:" + e.getMessage());
-			// nao conseguiu encontrar o hostname
-		} catch (EOFException e) {
-			System.out.println("EOF:" + e.getMessage());
-		} catch (IOException e) {
-			System.out.println("IO:" + e.getMessage());
-		} finally {
-			if (s != null)
-				try {
-					s.close();
-				} catch (IOException e) {
-					System.out.println("close:" + e.getMessage());
-				}
-
-			if (uploadSocket != null)
-				try {
-					uploadSocket.close();
-				} catch (IOException e) {
-					System.out.println("close:" + e.getMessage());
-				}
-			if (downloadSocket != null)
-				try {
-					downloadSocket.close();
-				} catch (IOException e) {
-					System.out.println("close:" + e.getMessage());
-				}
-		}
-
 		
+
 	}
 
 	// this method is for copying data to send to server for UPLOAD
@@ -205,43 +210,47 @@ public class Client {
 		}
 	}
 
-	private static void listClientDirectory(File curDir){
+	private static void listClientDirectory(File curDir) {
 
 		File[] filesList = curDir.listFiles();
-		
+
 		if (!curDir.isDirectory()) {
-            System.out.println("\n[ERROR] Invalid directory!\n");
-            return;
-        }
+			System.out.println("\n[ERROR] Invalid directory!\n");
+			return;
+		}
 
 		System.out.println("\n\n[local dir]: " + curDir.getName());
-		if (curDir.list().length == 0) System.out.println("Empty.");
-		for (File f: filesList){
-			if (f.isDirectory()) System.out.println("---- " + f.getName() + " (FOLDER)");
-			if (f.isFile()) System.out.println("---- " +f.getName());
+		if (curDir.list().length == 0)
+			System.out.println("Empty.");
+		for (File f : filesList) {
+			if (f.isDirectory())
+				System.out.println("---- " + f.getName() + " (FOLDER)");
+			if (f.isFile())
+				System.out.println("---- " + f.getName());
 		}
 		System.out.println();
 	}
 
-	private static File changeClientDirectory(File curDir, String nextDir){
+	private static File changeClientDirectory(File curDir, String nextDir) {
 
-		if (nextDir.equals("..")){
-            String previousFolder = curDir.getParent();
-            if (!curDir.getName().equals(".")){
+		if (nextDir.equals("..")) {
+			String previousFolder = curDir.getParent();
+			if (!curDir.getName().equals(".")) {
 				File previousPath = new File(new File("").getAbsolutePath() + "/" + previousFolder);
-                System.out.println("\n----------------\nNew [local] directory: " + previousFolder + "\n----------------\n");
-                return previousPath;
-            }
-            else {
-                System.out.println("\n[ERROR] Already on source folder!\n");
-                return curDir;
-            }
-        }
+				System.out.println(
+						"\n----------------\nNew [local] directory: " + previousFolder + "\n----------------\n");
+				return previousPath;
+			} else {
+				System.out.println("\n[ERROR] Already on source folder!\n");
+				return curDir;
+			}
+		}
 
 		File newPath = new File(curDir + "/" + nextDir);
 		String newPathDir = curDir + "/" + nextDir;
 
-		if (!newPath.isDirectory()) System.out.println("Directory not found!");
+		if (!newPath.isDirectory())
+			System.out.println("Directory not found!");
 		else {
 			System.out.println("\n----------------\nNew [local] directory: " + newPathDir + "\n----------------\n");
 			return newPath;
@@ -264,59 +273,3 @@ public class Client {
 		System.out.println("---------------------------------------------------------\n");
 	}
 }
-
-class MessageReader extends Thread {
-	DataInputStream in;
-
-	public MessageReader(DataInputStream in) {
-		this.in = in;
-		this.start();
-	}
-
-	// =============================
-	@Override
-	public void run() {
-		
-		try {
-			while (true) {
-				// READ FROM SOCKET
-				String data = in.readUTF();
-				System.out.println(data);
-			}
-		} catch (EOFException e) {
-			System.out.println("EOF:" + e);
-		} catch (IOException e) {
-			System.out.println("IO:" + e);
-		}
-	}
-}
-
-/*
- * HEARTBEATS
- * 
- * 
- * InetAdress ia = InetAdress.getByName("localhost");
- * try (DatagramSocket ds = new DatagramSocket()){
- * ds.setSoTimeout(1);
- * int failedheartbeats = 0;
- * white (failedheartbeats < maxfailedrounds){
- * try{
- * ByteArrayOutputStream baos = new ByteArrayOutputStream();
- * DataInputStream dos = new DataInputStream(baos);
- * dos.writeIt(count++);
- * byte[] buf = baos.toByteArray();
- * 
- * DatagramPacket dp = new DatagramPacket(buf, buf.length, ia, 4000);
- * ds.send(dp);
- * 
- * 
- * byte [] rbuf = new byte[4096];
- * DatagramPacket dr = new DatagramPacket(rbuf, rbuf.length);
- * 
- * ds.receive(dr);
- * failedheartbeats = 0;
- * 
- * }
- * }
- * }
- */

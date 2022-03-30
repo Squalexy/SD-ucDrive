@@ -3,21 +3,30 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class PrimaryServer {
-
+public class SecondaryServer {
+    
+    private static final int serverPort = 6000;
     public static ArrayList<Connection> connections = new ArrayList<>();
-    private static final int serverPort = 7000;
-    private static final int secServerPort = 6000;
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
 
-        ServerSocket listenSocket = null;
-        Socket clientSocket = null;
-
-        int numero = 0;
         try {
 
-            System.out.println("A Escuta no Porto 7000");
+            HeartbeatSender hb = new HeartbeatSender();
+            hb.join();
+
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+        // SECONDARY SERVERS BECOMES PRIMARY SERVER
+        ServerSocket listenSocket = null;
+        Socket clientSocket = null;
+        int numero = 0;
+
+        try {
+            System.out.println("A Escuta no Porto 6000");
             listenSocket = new ServerSocket(serverPort);
             System.out.println("LISTEN SOCKET=" + listenSocket);
 
@@ -45,7 +54,7 @@ public class PrimaryServer {
                     System.out.println("close:" + e.getMessage());
                 }
         }
-
-
+    
     }
+
 }
