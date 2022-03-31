@@ -3,58 +3,77 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class SecondaryServer {
+public class SecondaryServer{
     
     private static final int serverPort = 6000;
     public static ArrayList<Connection> connections = new ArrayList<>();
 
-    public static void main(String[] args) {
+    public static void main(String args[]) throws FileNotFoundException {
 
-        try {
+        String [] state = new String[2];
+        File serverState = new File("server.txt");
+        Scanner scan = new Scanner(serverState);
+        state[0] = scan.nextLine();
+        state[1] = scan.nextLine();
+        scan.close();
 
-            HeartbeatSender hb = new HeartbeatSender();
-            hb.join();
+        while (true) {
 
-        }
-        catch (Exception e){
-            e.printStackTrace();
-        }
+            if (state[0].equals("false") && state[1].equals("true")) {
 
-        // SECONDARY SERVERS BECOMES PRIMARY SERVER
-        ServerSocket listenSocket = null;
-        Socket clientSocket = null;
-        int numero = 0;
+                ServerSocket listenSocket = null;
+                Socket clientSocket = null;
 
-        try {
-            System.out.println("A Escuta no Porto 6000");
-            listenSocket = new ServerSocket(serverPort);
-            System.out.println("LISTEN SOCKET=" + listenSocket);
+                int numero = 0;
+                try {
 
-            while (true) {
-                clientSocket = listenSocket.accept(); // BLOQUEANTE
-                System.out.println("CLIENT_SOCKET (created at accept())=" + clientSocket);
-                numero++;
+                    System.out.println("A Escuta no Porto 6000");
+                    listenSocket = new ServerSocket(serverPort);
+                    System.out.println("LISTEN SOCKET=" + listenSocket);
+                    new HeartbeatReceiver();
 
-                new HeartbeatReceiver();
-                new Connection(clientSocket, numero, connections);
+                    while (true) {
+                        clientSocket = listenSocket.accept(); // BLOQUEANTE
+                        System.out.println("CLIENT_SOCKET (created at accept())=" + clientSocket);
+                        numero++;
+                        new Connection(clientSocket, numero, connections);
+                    }
+                } catch (IOException e) {
+                    System.out.println("Listen:" + e.getMessage());
+                } finally {
+                    if (listenSocket != null)
+                        try {
+                            listenSocket.close();
+                        } catch (IOException e) {
+                            System.out.println("close:" + e.getMessage());
+                        }
+                    if (clientSocket != null)
+                        try {
+                            clientSocket.close();
+                        } catch (IOException e) {
+                            System.out.println("close:" + e.getMessage());
+                        }
+                }
+
             }
-        } catch (IOException e) {
-            System.out.println("Listen:" + e.getMessage());
-        } finally {
-            if (listenSocket != null)
-                try {
-                    listenSocket.close();
-                } catch (IOException e) {
-                    System.out.println("close:" + e.getMessage());
-                }
-            if (clientSocket != null)
-                try {
-                    clientSocket.close();
-                } catch (IOException e) {
-                    System.out.println("close:" + e.getMessage());
-                }
-        }
-    
-    }
 
+            else if (state[0].equals("true") && state[1].equals("false")) {
+
+                try {
+
+                    HeartbeatSender hb = new HeartbeatSender();
+                    hb.join();
+
+                    FileWriter newServerState = new FileWriter("server.txt");
+                    newServerState.write("false\ntrue");
+                    newServerState.close();
+                    state[0] = "false";
+                    state[1] = "true";
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 }

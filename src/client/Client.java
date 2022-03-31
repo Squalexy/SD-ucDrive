@@ -133,8 +133,13 @@ public class Client {
 				// nao conseguiu encontrar o hostname
 			} catch (EOFException e) {
 				System.out.println("Server went down!");
-				serversocket = 6000;
 			} catch (ConnectException e){
+				if(serversocket == 7000){
+					serversocket = 6000;
+				}
+				else if(serversocket == 6000){
+					serversocket = 7000;
+				}
 				System.out.println("Trying to connect to server...");
 			} catch (IOException e) {
 				System.out.println("IO:" + e.getMessage());
