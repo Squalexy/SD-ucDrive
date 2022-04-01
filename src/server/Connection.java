@@ -3,8 +3,8 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class Connection extends Thread{
-    
+public class Connection extends Thread {
+
     DataInputStream in;
     DataOutputStream out;
     ArrayList<Connection> connections;
@@ -60,7 +60,7 @@ public class Connection extends Thread{
                 // DEBUGGING ------------------------------------------------------
             }
         } catch (EOFException e) {
-            System.out.println("EOF:" + e);
+            System.out.println("\n---------------\nUser disconnected\n---------------\n");
             this.connections.remove(this);
         } catch (IOException e) {
             System.out.println("IO:" + e);
@@ -107,6 +107,7 @@ public class Connection extends Thread{
 
         // --------------------------------------------------- MODIFY PASSWORD
         else if (command[0].equalsIgnoreCase("PW")) {
+
             if (command.length != 3) {
                 out.writeUTF("\n[ERROR] PW <password> <new password>\n");
                 out.flush();
@@ -114,18 +115,29 @@ public class Connection extends Thread{
             }
 
             if (!this.username.isEmpty()) {
-                modify_user_info(this.username, this.password, this.directory, 1, command[2], out);
-                username = "";
-                password = "";
-                out.writeUTF("\nDisconnected from the server\n");
-                out.flush();
-            } else
+                if (this.password.equals(command[1])) {
+                    modify_user_info(this.username, this.password, this.directory, 1, command[2], out);
+                    username = "";
+                    password = "";
+                }
+
+                else {
+                    out.writeUTF("\n[ERROR] Current password invalid, please try again.\n");
+                    out.flush();
+                }
+            }
+
+            else {
                 out.writeUTF("\n[ERROR] You're not registered!\n");
-            out.flush();
+                out.flush();
+            }
         }
 
-        // --------------------------------------------------- LIST SERVER DIRECTORY
-        else if (command[0].equalsIgnoreCase("LSS")) {
+        // --------------------------------------------------- LIST REMOTE DIRECTORY
+        else if (command[0].equalsIgnoreCase("LSS"))
+
+        {
+
             if (command.length != 1) {
                 out.writeUTF("\n[ERROR] LSS\n");
                 out.flush();
@@ -139,7 +151,7 @@ public class Connection extends Thread{
             out.flush();
         }
 
-        // --------------------------------------------------- CHANGE SERVER DIRECTORY
+        // --------------------------------------------------- CHANGE REMOTE DIRECTORY
         else if (command[0].equalsIgnoreCase("CDS")) {
             if (command.length != 2) {
                 out.writeUTF("\n[ERROR] CDS <new directory>\n");
@@ -156,9 +168,11 @@ public class Connection extends Thread{
             out.flush();
         }
 
-        // --------------------------------------------------- DOWNLOAD FROM SERVER
-        // DIRECTORY
+        // --------------------------------------------------- DOWNLOAD FROM REMOTE DIRECTORY
         else if (command[0].equalsIgnoreCase("DN")) {
+
+            System.out.println("Entrou no DN");
+
             if (command.length != 2) {
                 out.writeUTF("\n[ERROR] DN <filename>\n");
                 out.flush();
@@ -166,14 +180,13 @@ public class Connection extends Thread{
             }
 
             if (!this.username.isEmpty()) {
-                downloadFile(command[1]);
+                downloadFile(command[1], out);
             } else
-                out.writeUTF("\n[ERROR] You're registered!\n");
+                out.writeUTF("\n[ERROR] You're not registered!\n");
             out.flush();
         }
 
-        // --------------------------------------------------- UPLOAD TO SERVER
-        // DIRECTORY
+        // --------------------------------------------------- UPLOAD TO REMOTE DIRECTORY
         else if (command[0].equalsIgnoreCase("UP")) {
             if (command.length != 2) {
                 out.writeUTF("\n[ERROR] UP <filename>\n");
@@ -186,15 +199,6 @@ public class Connection extends Thread{
             } else
                 out.writeUTF("\n[ERROR] You're not registered!\n");
             out.flush();
-        }
-
-        // --------------------------------------------------- LS and CD from CLIENT: do
-        // nothing
-        else if (command[0].equalsIgnoreCase("LSC") || command[0].equalsIgnoreCase("CDC")) {
-            if (command.length != 1) {
-                out.writeUTF("\n[ERROR] LSC/CDC\n");
-                out.flush();
-            }
         }
 
         else
@@ -210,7 +214,6 @@ public class Connection extends Thread{
                 if (line[0].equals(username) && line[1].equals(password)) {
                     System.out.println(line[2]);
                     setDirectory(line[2]);
-
                     return true;
                 }
             }
@@ -218,11 +221,9 @@ public class Connection extends Thread{
         return false;
     }
 
-    // TCP
-
     // function that handles client password update--> must disconnect user
     // after calling this function and authenticate him again
-    private void modify_user_info(String username, String password, String userFilePath, int option, String command,
+    private void modify_user_info(String username, String oldPassword, String userFilePath, int option, String command,
             DataOutputStream out) throws IOException {
 
         // command = password if option = 1
@@ -237,14 +238,14 @@ public class Connection extends Thread{
         String fileContent = buffer.toString();
         sc.close();
 
-        String oldLine = username + "," + password + "," + userFilePath;
+        String oldLine = username + "," + oldPassword + "," + userFilePath;
         String newLine = "";
 
         // change password
         if (option == 1) {
             setDirectory("clients/" + this.username + "/home");
             newLine = this.username + "," + command + "," + getDirectory();
-            out.writeUTF("\n\n-------\nPassword changed!\n-------\n");
+            out.writeUTF("\n\n-------\nPassword changed!\n-------\nPlease, authenticate again...\n");
         }
 
         // change directory
@@ -263,7 +264,7 @@ public class Connection extends Thread{
     // returns list of files in current directory (aka $ls)
     private void listServerDirectory(DataOutputStream out) throws IOException {
 
-        //TODO: relatório: indicar o porquê de stringbuilder (muitos writeUTF seguidos não dava)
+        // TODO: relatório: indicar o porquê de stringbuilder (muitos writeUTF seguidos não dava)
 
         String dir = new File("").getAbsolutePath() + "/" + getDirectory();
         File curDir = new File(dir);
@@ -277,7 +278,7 @@ public class Connection extends Thread{
         }
 
         StringBuilder display = new StringBuilder();
-        display.append("\n[server dir]: " + getDirectory());
+        display.append("\n~~~~~~~~~~~~~~~~~~~~~~~\n[remote dir]: " + getDirectory());
 
         if (curDir.list().length == 0) {
             display.append("\nEmpty.");
@@ -295,7 +296,7 @@ public class Connection extends Thread{
                 display.append("\n---- " + f.getName());
             }
         }
-        out.writeUTF(display.toString() + "\n");
+        out.writeUTF(display.toString() + "\n~~~~~~~~~~~~~~~~~~~~~~~\n");
         out.flush();
 
     }
@@ -313,7 +314,7 @@ public class Connection extends Thread{
                 out.flush();
                 return previousFolder;
             } else {
-                out.writeUTF("[ERROR] Already on home page!");
+                out.writeUTF("\n[ERROR] Already on home page!");
                 out.flush();
                 return curDir;
             }
@@ -349,20 +350,39 @@ public class Connection extends Thread{
     }
 
     // function that handles file download
-    private void downloadFile(String filename) {
-        // ainda faltam muitas verificacoes e tratamento de excepcoes aqui
+    private void downloadFile(String filename, DataOutputStream out) throws IOException {
+
+        int fileExists = 0;
+
         String dir = new File("").getAbsolutePath() + "/" + getDirectory();
 
         try (ServerSocket listenSocket = new ServerSocket(0)) {
-            int port = listenSocket.getLocalPort();
-            out.writeInt(port);
 
-            Socket downloadSocket = listenSocket.accept(); // BLOQUEANTE
-            FileInputStream fis = new FileInputStream(new File(dir + "/" + filename));
-            new FileDownload(downloadSocket, fis);
+            int port = listenSocket.getLocalPort();
+
+            File curDir = new File(dir);
+            File[] filesList = curDir.listFiles();
+            for (File f : filesList) {
+                if (f.isFile() && f.getName().equals(filename)) {
+                    fileExists = 1;
+                }
+            }
+
+            if (fileExists == 1) {
+                
+                out.writeInt(port);
+                Socket downloadSocket = listenSocket.accept(); // BLOQUEANTE
+                FileInputStream fis = new FileInputStream(new File(dir + "/" + filename));
+                new FileDownload(downloadSocket, fis);
+                out.flush();
+            } else {
+                out.writeInt(0);
+                out.flush();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
+
     }
 
     // function that handles file upload
