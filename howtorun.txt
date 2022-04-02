@@ -1,6 +1,6 @@
 CLIENT
 > jar cmf manifest.MF terminal.jar Client.class Client.java
-> java -cp terminal.jar Client
+> java -cp terminal.jar Client <server address to connect to>
 
 SERVER:
 > jar cmf manifest.MF ucDrive.jar *.class Server.java

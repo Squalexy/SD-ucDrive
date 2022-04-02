@@ -40,7 +40,7 @@ public class Server {
             int numero = 0;
             try {
 
-                System.out.println("Listening on port 7000");
+                System.out.println("Listening on port " + thisServerPort);
                 listenSocket = new ServerSocket(thisServerPort);
                 System.out.println("LISTEN SOCKET=" + listenSocket);
                 new HeartbeatReceiver();
