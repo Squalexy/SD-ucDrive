@@ -1,0 +1,7 @@
+squalexy,aaa,clients/squalexy/home
+squalexy2,bbb,clients/squalexy2/home
+squalexy3,ccc,clients/squalexy3/home
+squalexy4,dawdwa,clients/squalexy4/home
+alexyalmeida,adwdw,clients/alexyalmeida/home
+alexyalmeida2,apfwafafw,clients/alexyalmeida2/home
+alexyalmeida3,waiondwaoida,clients/alexyalmeida3/home

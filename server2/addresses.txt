@@ -1,0 +1,5 @@
+otherServerAddress,localhost
+thisServerPort,6000
+heartbPort,7001
+fileSyncPortReceiver,7003
+fileSyncPortSender,7002
