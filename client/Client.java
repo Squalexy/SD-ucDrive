@@ -4,6 +4,8 @@ import java.io.*;
 public class Client {
 
 	private static int serversocket = 7000;
+	private static String directory = new File("").getAbsolutePath() + "/";
+	private static final String currentDirectory = new File(new File("").getAbsolutePath()).getName();
 
 	public static void main(String args[]) {
 		if (args.length == 0) {
@@ -14,9 +16,8 @@ public class Client {
 		Socket s = null;
 		Socket uploadSocket = null;
 		Socket downloadSocket = null;
-		File curDir = new File(".");
-
 		boolean connectAgain = false;
+		
 		
 
 		while (true){
@@ -70,7 +71,7 @@ public class Client {
 							continue;
 						}
 
-						listClientDirectory(curDir);
+						listClientDirectory();
 					}
 
 					// --------------------------------------------------- CHANGE LOCAL DIRECTORY
@@ -86,7 +87,7 @@ public class Client {
 							continue;
 						}
 
-						curDir = changeClientDirectory(curDir, command[1]);
+						changeClientDirectory(command[1]);
 					}
 
 					// --------------------------------------------------- SHOW MENU
@@ -109,8 +110,7 @@ public class Client {
 						}
 
 						int fileExists = 0;
-						String dir = new File("").getAbsolutePath() + "/";
-						File currentDir = new File(dir);
+						File currentDir = new File(directory);
 
 						File[] filesList = currentDir.listFiles();
 						for (File f : filesList) {
@@ -129,7 +129,7 @@ public class Client {
 
 							// meter o ficheiro num buffer para enviar ao servidor
 							System.out.println("\nUploading file...");
-							copyFileData(curDir + "/" + command[1], upOut);
+							copyFileData(directory + "/" + command[1], upOut);
 							System.out.println("[SUCCESS] Upload Finished!\n");
 							out.flush();
 						}
@@ -161,7 +161,7 @@ public class Client {
 
 							// descarregar o ficheiro
 							System.out.println("\nDownloading...");
-							downloadFileData(curDir + "/" + command[1], inDownload);
+							downloadFileData(directory + "/" + command[1], inDownload);
 							System.out.println("[SUCCESS] Download Finished!\n");
 						}
 
@@ -274,8 +274,9 @@ public class Client {
 		}
 	}
 
-	private static void listClientDirectory(File curDir) {
+	private static void listClientDirectory() {
 
+		File curDir = new File(directory);
 		File[] filesList = curDir.listFiles();
 
 		if (!curDir.isDirectory()) {
@@ -295,31 +296,37 @@ public class Client {
 		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~\n");
 	}
 
-	private static File changeClientDirectory(File curDir, String nextDir) {
+	private static void changeClientDirectory(String nextDir) {
+
+		File curDir = new File(directory);
+
+
 
 		if (nextDir.equals("..")) {
 			String previousFolder = curDir.getParent();
-			if (!curDir.getName().equals(".")) {
-				File previousPath = new File(new File("").getAbsolutePath() + "/" + previousFolder);
+			System.out.println(curDir.getName());
+			if (!curDir.getName().equals(currentDirectory)) {
+				directory = previousFolder;
+
 				System.out.println(
-						"\n----------------\nNew [local] directory: " + previousFolder + "\n----------------\n");
-				return previousPath;
+						"\n----------------\nNew [local] directory: " + directory + "\n----------------\n");
+				return;
 			} else {
 				System.out.println("\n[ERROR] Already on source folder!\n");
-				return curDir;
+				return;
 			}
 		}
 
-		File newPath = new File(curDir + "/" + nextDir);
-		String newPathDir = curDir + "/" + nextDir;
+		String newPathDir = directory + "/" + nextDir;
+		File newPath = new File(newPathDir);
+		
 
 		if (!newPath.isDirectory())
 			System.out.println("\n[ERROR] Directory not found!\n");
 		else {
+			directory = newPathDir;
 			System.out.println("\n----------------\nNew [local] directory: " + newPathDir + "\n----------------\n");
-			return newPath;
 		}
-		return curDir;
 	}
 
 	private static void commandMenu() {

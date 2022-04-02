@@ -52,7 +52,7 @@ public class Connection extends Thread {
             while (true) {
                 // an echo server
                 String data = in.readUTF();
-                System.out.println("T[" + thread_number + "] Recebeu: " + data);
+                System.out.println("T[" + thread_number + "] Received: " + data);
 
                 // servidor trata do pedido do cliente aqui
                 parseCommand(data);
@@ -91,10 +91,6 @@ public class Connection extends Thread {
                 if (find_user(command[1], command[2], usersFile)) {
                     this.username = command[1];
                     this.password = command[2];
-
-                    // create client directory if it doesn't exist
-                    createDirectory(this.username);
-
                     out.writeUTF("\n\n-------\nWelcome " + this.username + ", you are now authenticated!\n-------\n");
                     out.flush();
                 } else
@@ -269,8 +265,6 @@ public class Connection extends Thread {
     // returns list of files in current directory (aka $ls)
     private void listServerDirectory(DataOutputStream out) throws IOException {
 
-        // TODO: relatório: indicar o porquê de stringbuilder (muitos writeUTF seguidos não dava)
-
         String dir = new File("").getAbsolutePath() + "/" + getDirectory();
         File curDir = new File(dir);
 
@@ -341,19 +335,6 @@ public class Connection extends Thread {
         return curDir;
     }
 
-    private void createDirectory(String username) {
-
-        String dir = new File("").getAbsolutePath() + "/clients/" + username + "/home";
-        File folder = new File(dir);
-        if (!folder.isDirectory()) {
-            if (folder.mkdirs()) {
-                System.out.println("\n::: Created user folder for " + username + ":::\n");
-            } else {
-                System.out.println("Failed to create directory");
-            }
-        }
-    }
-
     // function that handles file download
     private void downloadFile(String filename, DataOutputStream out, String otherServerAddress) throws IOException {
 
@@ -402,17 +383,10 @@ public class Connection extends Thread {
             File uploaded = new File(dir + "/" + filename);
             uploaded.createNewFile();
             FileOutputStream fos = new FileOutputStream(uploaded);
-            System.out.println("new file upload");
             new FileUpload(uploadSocket, fos, getDirectory() + "/" + filename, otherServerAddress, this.fileSyncPort);
-            System.out.println("after file upload");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
-    // UDP
-    // TODO: heartbeat function to other server
-
-    // TODO?: data replication
 
 }

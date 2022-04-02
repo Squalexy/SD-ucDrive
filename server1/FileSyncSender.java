@@ -65,7 +65,6 @@ public class FileSyncSender extends Thread{
 
                 // if the request was not acknowledge, try again
                 if (!response.equals("ACK")){
-                    System.out.println("[ACK response]: false");
                     fis.close();
                     continue;
                 }
@@ -87,27 +86,19 @@ public class FileSyncSender extends Thread{
                             dp = new DatagramPacket(outBuf, outBuf.length, ia, transferPort);
                             ds.send(dp);
                             ack = receiveUTF();
-                            System.out.println("[ACK received] " + ack);
                         }
                         sequence++;
-                        System.out.println("[sequence]" + sequence);
-                        System.out.println("[ack]" + ack);
                     }
 
-                    System.out.println("saiu de nread > 0");
                 } while (nread > -1);
 
                 fis.close();
 
-                System.out.println("[send] UTF ack");
                 sendUTF("ACK", ia, transferPort);
                 String utfReceived = receiveUTF();
-                System.out.println("[utf received] " + utfReceived);
                 if (utfReceived.equals("ACK")) {
-                    System.out.println("before break");
                     break;
                 }
-                System.out.println("[ACK receive utf]: false");
             }
         }
         catch (UnknownHostException e){

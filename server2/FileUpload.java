@@ -19,9 +19,7 @@ public class FileUpload extends Thread {
             this.fileSyncPort = fileSyncPort;
             // this.out = new DataOutputStream(clientSocket.getOutputStream());
             this.fos = fos;
-            System.out.println("Before start thread");
             this.start();
-            System.out.println("After start thread");
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -29,7 +27,6 @@ public class FileUpload extends Thread {
 
     @Override
     public void run() {
-        System.out.println("after run");
         int nread;
         int bufsize = 4096;
         byte[] buf = new byte[bufsize];
@@ -47,8 +44,6 @@ public class FileUpload extends Thread {
             e.printStackTrace();
         }
 
-        System.out.println("Before sender");
         new FileSyncSender(fileSyncPort, root, otherServerAddress);
-        System.out.println("After sender");
     }
 }

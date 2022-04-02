@@ -11,9 +11,7 @@ public class FileReceiverUDP extends Thread{
         otherAddr = addr;
         otherPort = port;
         this.f  = f;
-        System.out.println("before start");
         this.start();
-        System.out.println("after start");
     }
 
     @Override
@@ -40,22 +38,17 @@ public class FileReceiverUDP extends Thread{
                 FileOutputStream fos = new FileOutputStream(f);
 
                 do{
-                    System.out.println("[filesize] " + filesize);
-                    System.out.println("[received] " + received);
                     if (received == filesize) break;
-                    System.out.println("entrou no do");
                     DatagramPacket dp = new DatagramPacket(rbuf, rbuf.length);
                     ds.receive(dp);
         
                     ByteArrayInputStream bais = new ByteArrayInputStream(rbuf, 0, dp.getLength());
                     DataInputStream dis = new DataInputStream(bais);
                     nread = dis.read(buf);
-                    
-                    System.out.println("before nread > 0");
+
                     if (nread > 0){
                         received += nread;
                         fos.write(buf, 0, nread);
-                        System.out.println("before send utf ack " + seq);
                         sendUTF("ACK" + seq);
                         seq++;
                         fos.flush();
@@ -63,15 +56,10 @@ public class FileReceiverUDP extends Thread{
                     
                 } while (nread > 0);
 
-                System.out.println("saiu do do while");
-
                 String response = receiveUTF();
-
-                System.out.println("after receive utf");
 
                 // check if total file has received, else retry
                 if (received == filesize && response.equals("ACK")){
-                    System.out.println("equals ack");
                     sendUTF("ACK");
                     fos.close();
                     break;
